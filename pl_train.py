@@ -91,9 +91,11 @@ def main(args):
     model = SWave(**kwargs)
     ss_model = Model(model=model, args=args)
 
+    gpus = -1 if torch.cuda.is_available() else None
+
     # initialize trainer
     trainer = pl.Trainer(
-        gpus=4,
+        gpus=gpus,
         distributed_backend="ddp",
         gradient_clip_val=args.max_norm,
         max_epochs=args.epochs,
