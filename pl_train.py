@@ -1,31 +1,20 @@
-import json
-from pathlib import Path
 import os
-import time
 import hydra
 
 import numpy as np
 import torch
-import torch.nn.functional as F
-from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
 
-from svoice.separate import separate
-from svoice.evaluate import evaluate
 from svoice.models.sisnr_loss import cal_loss
 from svoice.models.swave import SWave
 from svoice.data.data import Trainset, Validset
 from torch.utils.data import DataLoader
-
-# from .utils import bold, copy_state, pull_metric, serialize_model, swap_state, LogProgress
-
 import pytorch_lightning as pl
-from svoice.models.swave import SWave
-from svoice import distrib
 
 
 class Model(pl.LightningModule):
     def __init__(self, model, args):
         super().__init__()
+        self.save_hyperparameters(args)
         self.model = model
         self.args = args
 
