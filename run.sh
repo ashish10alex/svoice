@@ -1,2 +1,4 @@
 #!/bin/bash
-python train.py
+rm -rf outputs/exp_/
+#python train.py
+python pl_train.py

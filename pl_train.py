@@ -9,7 +9,8 @@ from svoice.models.swave import SWave
 from svoice.data.data import Trainset, Validset
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
-
+from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
+from pytorch_lightning.callbacks import LearningRateMonitor
 
 class Model(pl.LightningModule):
     def __init__(self, model, args):
@@ -42,17 +43,32 @@ class Model(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         loss = self.common_step(batch, batch_idx)
+        self.log("loss", loss, logger=True)
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):
         loss = self.common_step(batch, batch_idx)
+        self.log("val_loss", loss, on_epoch=True, prog_bar=True)
         return {"val_loss": loss}
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.model.parameters(), lr=self.args.lr, betas=(0.9, self.args.beta2)
         )
-        return optimizer
+        schedulers = [
+            {
+                "scheduler": ReduceLROnPlateau(
+                    optimizer,
+                    factor=self.args.plateau.factor,
+                    patience=self.args.plateau.patience,
+                ),
+                "monitor": "val_loss",
+                "interval": "epoch",
+                "frequency": 1,
+                "strict": True,
+            }
+        ]
+        return [optimizer], schedulers
 
 
 @hydra.main(config_path="conf", config_name="config.yaml")
@@ -92,13 +108,15 @@ def main(args):
     ss_model = Model(model=model, args=args)
 
     gpus = -1 if torch.cuda.is_available() else None
-
+    
+    #lr_monitor = LearningRateMonitor(logging_interval='step')
     # initialize trainer
     trainer = pl.Trainer(
         gpus=gpus,
         distributed_backend="ddp",
         gradient_clip_val=args.max_norm,
         max_epochs=args.epochs,
+        #callbacks=[lr_monitor],
     )
     trainer.fit(ss_model, tr_loader, cv_loader)
 
