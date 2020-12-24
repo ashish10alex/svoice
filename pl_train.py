@@ -10,12 +10,12 @@ from svoice.data.data import Trainset, Validset
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
-from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
 class Model(pl.LightningModule):
     def __init__(self, model, args):
         super().__init__()
-        self.save_hyperparameters(args)
+        self.save_hyperparameters(dict(args))
         self.model = model
         self.args = args
 
@@ -100,6 +100,20 @@ def main(args):
     cv_dataset = Validset(args.dset.valid)
     cv_loader = DataLoader(cv_dataset, batch_size=1, num_workers=args.num_workers)
 
+    
+    callbacks = []
+    checkpoint_dir = os.path.join("checkpoints/")
+    checkpoint = ModelCheckpoint(
+        filename='{epoch:02d}-{val_loss:.2f}',
+        monitor="val_loss", 
+        mode="min", 
+        save_top_k=5,
+        verbose=True
+    )
+    callbacks.append(checkpoint)
+    if args.early_stop == True:
+        callbacks.append(EarlyStopping(monitor="val_loss", mode="min", patience=10, verbose=True))
+
     # define args and initialize swave model
     kwargs = dict(args.swave)
     kwargs["sr"] = args.sample_rate
@@ -109,16 +123,17 @@ def main(args):
 
     gpus = -1 if torch.cuda.is_available() else None
     
-    #lr_monitor = LearningRateMonitor(logging_interval='step')
     # initialize trainer
     trainer = pl.Trainer(
         gpus=gpus,
         distributed_backend="ddp",
         gradient_clip_val=args.max_norm,
         max_epochs=args.epochs,
-        #callbacks=[lr_monitor],
+        callbacks=callbacks,
+        plugins='ddp_sharded'
     )
     trainer.fit(ss_model, tr_loader, cv_loader)
+    print('done')
 
 
 if __name__ == "__main__":
