@@ -17,8 +17,8 @@ from pprint import pprint
 import os
 import json
 
-# checkpoint_path = "/jmain01/home/JAD007/txk02/aaa18-txk02/SVOICE_exp/svoice_og/outputs/exp_/lightning_logs/version_542154/checkpoints/epoch=4-step=151254.ckpt"
-checkpoint_path = "/jmain01/home/JAD007/txk02/aaa18-txk02/svoice/outputs/exp_/lightning_logs/version_0/checkpoints/epoch=06-val_loss=26.73.ckpt"
+# checkpoint_path = "/jmain01/home/JAD007/txk02/aaa18-txk02/svoice/outputs/exp_/lightning_logs/version_0/checkpoints/epoch=06-val_loss=26.73.ckpt"
+checkpoint_path = "/jmain01/home/JAD007/txk02/aaa18-txk02/SVOICE_exp/svoice_og/outputs/exp_/lightning_logs/version_542690/checkpoints/epoch=23-step=726023.ckpt"
 compute_metrics = ["si_sdr"]
 
 
@@ -68,8 +68,8 @@ def separate_pl(args):
             utt_metrics["mix_path"] = tt_data.mixture_path
             series_list.append(pd.Series(utt_metrics))
             all_metrics_df = pd.DataFrame(series_list)
-            if idx == 20:
-                break
+            # if idx == 20:
+            #    break
 
         all_metrics_df = pd.DataFrame(series_list)
         all_metrics_df.to_csv("all_metrics.csv")
